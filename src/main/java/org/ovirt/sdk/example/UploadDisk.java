@@ -1,4 +1,4 @@
-package demo.demo;
+package org.ovirt.sdk.example;
 
 import static org.ovirt.engine.sdk4.ConnectionBuilder.connection;
 
@@ -8,8 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -39,7 +37,7 @@ import org.ovirt.engine.sdk4.types.ImageTransfer;
 import org.ovirt.engine.sdk4.types.ImageTransferPhase;
 import org.ovirt.engine.sdk4.types.StorageDomain;
 
-public class App 
+public class UploadDisk 
 {
     public static void main( String[] args ) throws Exception
     {
@@ -79,6 +77,7 @@ public class App
 			}
 		}
 
+		
 		File file = new File("/tmp/0150a8e0-1f64-42a2-a937-d6e18f9f1cbc");
 //		File file = new File("/tmp/arik.txt");
 //		byte[] content = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
@@ -127,8 +126,7 @@ public class App
 		https.setRequestProperty("Content-Length", String.valueOf(length));
 		https.setRequestMethod("PUT");
 //		https.setDefaultUseCaches(false);
-		https.setChunkedStreamingMode(64*1024);
-//		https.setChunkedStreamingMode(-1);
+		https.setChunkedStreamingMode(128*1024);
 //		https.setUseCaches(false);
 		https.setDoOutput(true);
 		https.connect();
@@ -139,13 +137,6 @@ public class App
 		int read = 0;
 		System.out.println("transforming...");
 
-		/*int len = is.read(buf);
-		while (len != -1) {
-		    os.write(buf, 0, len);
-		    len = is.read(buf);
-		    read += len;
-		    System.out.println("transformed " + len + ", " + read);
-		}*/
 		do {
 			int readNow = is.read(buf);
 			os.write(buf, 0, readNow);
@@ -165,7 +156,7 @@ public class App
 		ImageTransferService transferService = systemService.imageTransfersService().imageTransferService(transfer.id());
 		transferService.finalize_().send();
 		https.disconnect();
-		
+
 		// Always remember to close the connection when finished:
 		connection.close();
     }
