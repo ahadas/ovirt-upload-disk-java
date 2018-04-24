@@ -41,7 +41,6 @@ public class UploadDisk
 {
     public static void main( String[] args ) throws Exception
     {
-        System.out.println( "Hello World!" );
         Connection connection = connection()
 				  .url("http://dubi.tlv.redhat.com:8080/ovirt-engine/api")
 				  .user("admin@internal")
@@ -65,7 +64,6 @@ public class UploadDisk
 				System.out.println("Disk " + disk.name() + ":");
 				System.out.println("    size        = " + disk.provisionedSize());
 				System.out.println("    actual-size = " + disk.actualSize());
-//				System.out.println("    bootable    = " + disk.bootable());
 			}
 		});
 
@@ -79,9 +77,10 @@ public class UploadDisk
 
 		
 		File file = new File("/tmp/0150a8e0-1f64-42a2-a937-d6e18f9f1cbc");
-//		File file = new File("/tmp/arik.txt");
-//		byte[] content = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
-//		System.out.println("uploading file with: " + new String(content));
+		if (!file.exists()) {
+			System.out.println("File does not exist: " + file.getAbsolutePath());
+			return;
+		}
 
 		System.out.println("Creating disk...");
 		DiskContainer disk = new DiskContainer();
@@ -116,18 +115,13 @@ public class UploadDisk
 		System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
 
 		URL url = new URL(transfer.proxyUrl());
-//		SSLContext context = new SSLContext
 		HttpsURLConnection https = (HttpsURLConnection) url.openConnection();
 		https.setRequestProperty("PUT", url.getPath());
 		long length = file.length();
 		System.out.println("length = " + length);
-//		https.setFixedLengthStreamingMode(length);
-//		System.out.println("content length = " + https.getContentLengthLong());
 		https.setRequestProperty("Content-Length", String.valueOf(length));
 		https.setRequestMethod("PUT");
-//		https.setDefaultUseCaches(false);
 		https.setChunkedStreamingMode(128*1024);
-//		https.setUseCaches(false);
 		https.setDoOutput(true);
 		https.connect();
 
@@ -135,24 +129,23 @@ public class UploadDisk
 		InputStream is = new FileInputStream(file);
 		byte[] buf = new byte[128 * 1024];
 		int read = 0;
-		System.out.println("transforming...");
 
+		System.out.println("Uploading...");
 		do {
 			int readNow = is.read(buf);
 			os.write(buf, 0, readNow);
 			os.flush();
 			read += readNow;
-			System.out.println("transformed " + readNow + ", " + read);
+			System.out.println("Uploaded " +  String.format("%.2f", read*100.0/length) + "%");
 		} while(read < length);
 
 		int responseCode = https.getResponseCode();
-		
-		System.out.println("response code  = " + responseCode);
+		System.out.println("Finished " + (responseCode == 200 ? "successfully" : "with failure") + "(response code  = " + responseCode +")");
 
 		is.close();
 		os.close();
 
-		System.out.println("Terminating transfer session...");
+		System.out.println("Finalizing transfer session...");
 		ImageTransferService transferService = systemService.imageTransfersService().imageTransferService(transfer.id());
 		transferService.finalize_().send();
 		https.disconnect();
